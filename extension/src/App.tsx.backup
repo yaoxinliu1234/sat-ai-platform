@@ -1,0 +1,315 @@
+import { useState, useEffect } from 'react'
+import { questionsAPI, submissionsAPI, Question } from './api'
+import './App.css'
+
+function App() {
+  console.log("App component rendering")
+  console.log("isLoggedIn:", isLoggedIn)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [userAnswer, setUserAnswer] = useState('')
+  const [showAnswer, setShowAnswer] = useState(false)
+  const [answeredQuestions, setAnsweredQuestions] = useState<Set<number>>(new Set())
+  const [currentView, setCurrentView] = useState<'practice' | 'submissions'>('practice')
+  const [questionsLoading, setQuestionsLoading] = useState(true)
+  const [isLoggedIn, setIsLoggedIn] = useState(true)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+
+  const currentQuestion = questions[currentIndex]
+
+  useEffect(() => {
+    loadQuestions()
+  }, [])
+
+  const loadQuestions = async () => {
+    console.log("Loading questions...")
+    console.log("API URL:", "http://localhost:8000/api/v1/questions/")
+    try {
+      setQuestionsLoading(true)
+      const data = await questionsAPI.getQuestions()
+      console.log("Questions loaded:", data)
+      setQuestions(data)
+    } catch (error) {
+      console.log("Error details:", error)
+      console.log("Error message:", error.message)
+      console.log("Error stack:", error.stack)
+      console.error('Failed to load questions:', error)
+    } finally {
+      setQuestionsLoading(false)
+    }
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      // For now, just set logged in to true
+      setIsLoggedIn(true)
+    } catch (error) {
+      console.log("Error details:", error)
+      console.log("Error message:", error.message)
+      console.log("Error stack:", error.stack)
+      setLoginError('Login failed')
+    }
+  }
+
+  const handleSubmit = async (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    
+    if (!currentQuestion || answeredQuestions.has(currentQuestion.id)) return
+
+    try {
+      // Submit to backend
+      await submissionsAPI.createSubmission(currentQuestion.id, userAnswer)
+      
+      const isCorrect = userAnswer.trim().toLowerCase() === currentQuestion.answer.toLowerCase()
+      setAnsweredQuestions(new Set([...answeredQuestions, currentQuestion.id]))
+      setShowAnswer(true)
+    } catch (error) {
+      console.log("Error details:", error)
+      console.log("Error message:", error.message)
+      console.log("Error stack:", error.stack)
+      console.error('Failed to submit answer:', error)
+      // Still show the answer locally even if submission fails
+      setAnsweredQuestions(new Set([...answeredQuestions, currentQuestion.id]))
+      setShowAnswer(true)
+    }
+  }
+
+  const nextQuestion = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+      setUserAnswer('')
+      setShowAnswer(false)
+    }
+  }
+
+  const prevQuestion = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+    
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1)
+      setUserAnswer('')
+      setShowAnswer(false)
+    }
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              SAT AI Login
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Enter any email and password to continue
+            </p>
+          </div>
+          <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <input
+                  type="email"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <input
+                  type="password"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {loginError && (
+              <div className="text-red-600 text-sm text-center">{loginError}</div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Sign In
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  if (questionsLoading) {
+    return (
+      <div className="extension-container p-6 bg-gray-50">
+        <div className="text-center text-gray-500">Loading questions...</div>
+      </div>
+    )
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="extension-container p-6 bg-gray-50">
+        <div className="text-center text-gray-500">No questions available</div>
+      </div>
+    )
+  }
+
+  if (currentView === 'submissions') {
+    return (
+      <div className="extension-container">
+        <div className="bg-white shadow-sm border-b">
+          <div className="px-6 py-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-bold text-blue-600">SAT AI - Your Progress</h1>
+              <button
+                onClick={() => setCurrentView('practice')}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                Back to Practice
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="text-center text-gray-500">Submissions will appear here after you answer questions</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div 
+      className="extension-container p-6 bg-white"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6 pb-3 border-b">
+        <h1 className="text-xl font-bold text-blue-600">SAT Math Practice</h1>
+        <div className="flex items-center space-x-4">
+          <div className="text-base text-gray-600 font-medium">
+            Score: {answeredQuestions.size}/{questions.length}
+          </div>
+          <button
+            onClick={() => setCurrentView('submissions')}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+          >
+            View Progress
+          </button>
+        </div>
+      </div>
+
+      {/* Progress */}
+      <div className="mb-6">
+        <div className="flex justify-between text-sm text-gray-500 mb-2">
+          <span>Question {currentIndex + 1} of {questions.length}</span>
+          <span className="capitalize font-medium">{currentQuestion.topic}</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Question */}
+      <div className="flex-1 mb-6">
+        <div className="mb-6">
+          <p className="text-base font-medium text-gray-800 leading-relaxed">
+            {currentQuestion.stem}
+          </p>
+        </div>
+
+        {/* Answer Input */}
+        {currentQuestion.type === 'mcq' ? (
+          <div className="space-y-3">
+            {currentQuestion.options?.map((option, index) => (
+              <label key={index} className="flex items-center space-x-3 cursor-pointer p-2 rounded-md hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="answer"
+                  value={option}
+                  checked={userAnswer === option}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  disabled={showAnswer}
+                  className="text-blue-500 w-4 h-4"
+                />
+                <span className="text-base">{option}</span>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <input
+            type="text"
+            value={userAnswer}
+            onChange={(e) => setUserAnswer(e.target.value)}
+            placeholder="Enter your answer"
+            disabled={showAnswer}
+            className="w-full px-4 py-3 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        )}
+
+        {/* Answer Feedback */}
+        {showAnswer && (
+          <div className={`mt-4 p-3 rounded-md text-base font-medium ${
+            userAnswer.trim().toLowerCase() === currentQuestion.answer.toLowerCase()
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {userAnswer.trim().toLowerCase() === currentQuestion.answer.toLowerCase() 
+              ? '✓ Correct!' 
+              : `✗ Incorrect. Answer: ${currentQuestion.answer}`
+            }
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-between items-center">
+        <button
+          onClick={(e) => prevQuestion(e)}
+          disabled={currentIndex === 0}
+          className="px-4 py-2 text-base bg-gray-100 text-gray-600 rounded-md disabled:opacity-50 hover:bg-gray-200 transition-colors"
+        >
+          Previous
+        </button>
+
+        {!showAnswer ? (
+          <button
+            onClick={(e) => handleSubmit(e)}
+            disabled={!userAnswer.trim()}
+            className="px-6 py-2 text-base bg-blue-500 text-white rounded-md disabled:opacity-50 hover:bg-blue-600 transition-colors font-medium"
+          >
+            Submit
+          </button>
+        ) : (
+          <button
+            onClick={(e) => nextQuestion(e)}
+            disabled={currentIndex === questions.length - 1}
+            className="px-6 py-2 text-base bg-green-500 text-white rounded-md disabled:opacity-50 hover:bg-green-600 transition-colors font-medium"
+          >
+            {currentIndex === questions.length - 1 ? 'Finished' : 'Next'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default App

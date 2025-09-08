@@ -1,0 +1,4 @@
+[
+  {"id":1,"type":"mcq","topic":"algebra","stem":"2x + 3 = 7，x = ?","options":["1","2","3","4"],"answer":"2"},
+  {"id":2,"type":"short_answer","topic":"geometry","stem":"半径为 3 的圆面积（两位小数）≈ ?","answer":"28.27"}
+] 

@@ -1,0 +1,55 @@
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from app.api.deps import get_current_user
+from app.crud.question import (
+    get_questions, 
+    get_question, 
+    get_questions_by_topic, 
+    get_random_questions,
+    create_question
+)
+from app.db.session import get_db
+from app.models.user import User
+from app.schemas.question import Question, QuestionResponse, QuestionCreate
+
+router = APIRouter()
+
+@router.get("/", response_model=List[QuestionResponse])
+def get_questions_list(
+    skip: int = 0,
+    limit: int = 100,
+    topic: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    if topic:
+        questions = get_questions_by_topic(db, topic=topic, limit=limit)
+    else:
+        questions = get_questions(db, skip=skip, limit=limit)
+    return questions
+
+@router.get("/random", response_model=List[QuestionResponse])
+def get_random_questions_list(
+    limit: int = Query(10, le=50),
+    topic: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    questions = get_random_questions(db, limit=limit, topic=topic)
+    return questions
+
+@router.get("/{question_id}", response_model=QuestionResponse)
+def get_question_by_id(
+    question_id: int,
+    db: Session = Depends(get_db),
+):
+    question = get_question(db, question_id=question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+    return question
+
+@router.post("/", response_model=Question)
+def create_new_question(
+    question: QuestionCreate,
+    db: Session = Depends(get_db),
+):
+    return create_question(db=db, question=question) 

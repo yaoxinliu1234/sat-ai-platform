@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./sat_ai.db
+    volumes:
+      - ./backend/sat_ai.db:/app/sat_ai.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sat-ai-network
+
+  frontend:
+    build: ./extension
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - sat-ai-network
+
+networks:
+  sat-ai-network:
+    driver: bridge
+
+volumes:
+  database:
+    driver: local
