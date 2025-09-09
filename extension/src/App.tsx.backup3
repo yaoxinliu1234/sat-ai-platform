@@ -112,7 +112,7 @@ function App() {
       }
 
       // If login fails, try to register
-      console.log("Login failed, trying registration..."); console.log("Login response status:", loginResponse.status); console.log("Login response text:", await loginResponse.text())
+      console.log("Login failed, trying registration...")
       const registerResponse = await fetch('https://sat-ai-backend-1.onrender.com/api/v1/auth/register', {
         method: 'POST',
         headers: {
