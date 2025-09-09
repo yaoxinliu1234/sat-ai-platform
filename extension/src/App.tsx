@@ -65,7 +65,7 @@ function App() {
 
   const fetchQuestions = async (token: string) => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/questions/', {
+      const response = await fetch('https://sat-ai-backend-1.onrender.com/api/v1/questions/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -90,7 +90,7 @@ function App() {
     
     try {
       // Try login first (since user might already exist)
-      const loginResponse = await fetch('http://localhost:8000/api/v1/auth/token', {
+      const loginResponse = await fetch('https://sat-ai-backend-1.onrender.com/api/v1/auth/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -113,7 +113,7 @@ function App() {
 
       // If login fails, try to register
       console.log("Login failed, trying registration...")
-      const registerResponse = await fetch('http://localhost:8000/api/v1/auth/register', {
+      const registerResponse = await fetch('https://sat-ai-backend-1.onrender.com/api/v1/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ function App() {
     if (!accessToken) return
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/submissions/', {
+      const response = await fetch('https://sat-ai-backend-1.onrender.com/api/v1/submissions/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ function App() {
     if (!accessToken) return
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/submissions/', {
+      const response = await fetch('https://sat-ai-backend-1.onrender.com/api/v1/submissions/', {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
